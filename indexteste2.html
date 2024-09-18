@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Busca Simples</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Roboto:wght@700&display=swap');
+
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f1f1f1;
+        }
+
+        .container {
+            text-align: left;
+            width: 90%;
+            max-width: 1200px;
+        }
+
+        .logo-text {
+            font-family: 'Roboto', sans-serif;
+            font-weight: bold;
+            font-size: 40px;
+            margin-bottom: 5px;
+        }
+
+        .search-bar {
+            width: 90%;
+            padding: 15px;
+            font-size: 16px;
+            border: 1px solid #ccc;
+            border-radius: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            outline: none;
+        }
+
+        .search-bar::placeholder {
+            color: #888;
+        }
+
+        .search-bar:focus {
+            border-color: #4285f4;
+        }
+
+        .search-container {
+            margin-top: 15px;
+        }
+
+        .search-button {
+            margin-top: 20px;
+            padding: 10px 20px;
+            font-size: 14px;
+            background-color: #000;
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+        }
+
+        .search-button:hover {
+            background-color: #333;
+        }
+
+        @media (max-width: 600px) {
+            .logo-text {
+                font-size: 30px;
+            }
+
+            .search-bar {
+                width: 100%;
+            }
+
+            .search-button {
+                width: 100%;
+            }
+        }
+    </style>
+    <script>
+        const API_KEY = 'AIzaSyC_YGfIXIX_3Pc-l9qUZsRRXl8GAisW1p4';
+        let currentVideoIndex = 0;
+        let lastQuery = '';
+        let videos = [];
+        let userLocation = null;
+
+        // Obter localização aproximada baseada em IP usando o serviço IPinfo
+        function getLocationByIP() {
+            fetch('https://ipinfo.io/json?token=your_ipinfo_token') // Insira sua chave de API do IPinfo aqui
+                .then(response => response.json())
+                .then(data => {
+                    const [latitude, longitude] = data.loc.split(",");
+                    userLocation = {
+                        latitude: parseFloat(latitude),
+                        longitude: parseFloat(longitude)
+                    };
+                })
+                .catch(error => {
+                    console.error("Erro ao obter localização por IP:", error);
+                });
+        }
+
+        // Função de busca no YouTube
+        function searchYouTube() {
+            var query = document.querySelector('.search-bar').value;
+
+            if (query !== lastQuery) {
+                currentVideoIndex = 0;
+                lastQuery = query;
+            }
+
+            if (query) {
+                var url = `https://www.googleapis.com/youtube/v3/search?part=snippet&q=${encodeURIComponent(query)}&publishedAfter=${new Date(Date.now() - 3600 * 1000).toISOString()}&type=video&key=${API_KEY}`;
+
+                // Adiciona a localização aproximada baseada em IP se ela estiver disponível
+                if (userLocation) {
+                    url += `&location=${userLocation.latitude},${userLocation.longitude}&locationRadius=50km`;
+                }
+
+                // Faz a requisição à API do YouTube
+                fetch(url)
+                    .then(response => response.json())
+                    .then(data => {
+                        videos = data.items;
+
+                        if (videos.length > 0) {
+                            showNextVideo();
+                        } else {
+                            alert("Nenhum vídeo encontrado nas últimas horas.");
+                        }
+                    })
+                    .catch(error => {
+                        console.error("Erro ao buscar vídeos:", error);
+                    });
+            }
+        }
+
+        // Função para mostrar o próximo vídeo da lista
+        function showNextVideo() {
+            if (videos.length > 0) {
+                window.open(`https://www.youtube.com/watch?v=${videos[currentVideoIndex].id.videoId}`, '_blank');
+                currentVideoIndex++;
+
+                if (currentVideoIndex >= videos.length) {
+                    currentVideoIndex = 0;
+                }
+            }
+        }
+
+        // Inicializa a busca de localização por IP
+        document.addEventListener('DOMContentLoaded', () => {
+            getLocationByIP(); // Obtém a localização aproximada do usuário por IP
+
+            const searchInput = document.querySelector('.search-bar');
+            searchInput.addEventListener('keyup', (event) => {
+                if (event.key === 'Enter') {
+                    searchYouTube();
+                }
+            });
+        });
+    </script>
+</head>
+<body>
+
+<div class="container">
+    <div class="logo-text">Uploaded</div>
+
+    <div class="search-container">
+        <!-- Campo de busca -->
+        <input type="text" class="search-bar" placeholder="Search videos last hour">
+        <br>
+        <button class="search-button" onclick="searchYouTube()">Search</button>
+    </div>
+</div>
+
+</body>
+</html>
